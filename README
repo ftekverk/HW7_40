@@ -1,0 +1,141 @@
+/**************************************************************
+* README
+* HW6: um
+* CS 40
+* Authors : Finn Tekverk (ftekve01), Matthew Vivian (mvivia01)
+**************************************************************/
+
+
+Acknowledgements: 
+        We utilized TA Neil Powers during office hours for this assignment.
+
+Possible Implentation Issues:
+        We believe our program should work for all possible cases.
+
+Implemented Correctly:
+        We are confident in our other operations, and have tested them for
+        a reasonable range of values and cases.
+
+Departures from Design Architecture:
+        We are no longer using a Hanson table to store IDs and addresses. We
+        are instead storing the IDs in a Hanson Sequence.
+        
+Architecture Description:
+        Four modules:
+        
+        - Registers
+                An array of 8 uint32_t values representing register values.
+                Exports 2 functions for use:
+                        get_register_value and set_register_value
+        
+        - Segments
+                Defines a struct containing:
+                        - a sequence of segment information (length and array 
+                          of words)
+                        - a sequence of unmapped segment IDs to be reused if
+                          necessary
+                In this module, we implement all the possible actions a client
+                may need in order to manipulate and retrieve segment memory.
+                
+        - Command Parse
+                Implementation of a single function that given a 32 bit word
+                will return all of the information packed into that word, i.e.
+                the opcode, register info, and value if applicable
+
+        - Operations
+                Handles the execution of the um by interfacing command parsing
+                with our memory storage modules (registers and segments).
+                Exports a single function, emulate_um.
+
+        Interaction:
+                Operations utilizes all of the above modules. 
+                - Command parse is used to determine the required action, and 
+                updates register and segment values according to the values 
+                stored in the 32-bit word.
+                - Register and segment exported functions are used to update
+                and get values stored as required by commands.
+
+Time to execute 50 million instructions:
+        It took our program 11.79 seconds to execute 50 million instructions.
+        
+        We created a unit test with 49,999,999 loadval instructions and 1 halt
+        instructions (50 million total). We then executed the following command
+        in terminal.
+                time ./um 50_mil_bby.um
+
+        We couldn't provide this test due to its file size.
+
+        The full result was:
+                11.150u 0.384s 0:11.79 97.7%    0+0k 390632+0io 0pf+0w
+
+
+UM unit tests (what each tests and how):
+cat.um
+        - Provided: Tests I/O by reading in file information from standard in
+        and printing to standard out
+        - Input : cat.0
+        - Output: cat.1
+halt.um
+        - Provided: Tests the program is able to terminate at a halt command
+hello.um
+        - Provided: Tests the program has value setting and output capabilities
+        - Output : hello.1
+map_unmap.um
+        - Tests output in conjunction with map and unmap commands. Tests that 
+        segments can be mapped with different lengths, as well as unmapped.
+        Also tests that IDs are recycled by printing IDs.
+        - Output : map_unmap.1
+nand.um
+        Tests the functionality of nand by loading 2 register values, and
+        nanding them to an expected result.
+        - Output : nand.1
+seg_load.um
+        Tests that values stored in segments by calling store are the same as
+        the value put in register by using load. Outputs both sequences of
+        values.
+        - Output : seg_load.1
+cond_move.um
+        - Tests functionality of conditional move command for both cases, where
+        rc = 0 and rc != 0. Outputs the value stored in ra for both of these
+        cases.
+        - Output : cond_move.1
+halt-verbose.um
+        Tests the program is able to terminate at a halt command and not
+        process following commands
+load_prog.um
+        Tests that the load program function properly updates the program
+        counter and loads a new segment into segment 0. First updates program
+        counter to skip over output instructions, then loads instructions in
+        another segment that produce output and halts and loads that program to
+        segment 0. Instructions after loading the program from the original
+        segment 0 are not executed.
+        - Output : load_prog.1
+mult_div.um
+        - Tests multiply and divide commands by loading values into registers,
+        calling an operation, and outputting the value.
+        - Output : mult_div.1
+print-six.um
+        - Tests addition and output operations by adding two values and
+        outputting the result
+        - Output : print-six.1
+input.um
+        - Tests reading using input and outputting the values. Reads to also
+        test the case where end of input is triggered
+        - Input : input.0
+        - Output : input.1
+
+
+Time Analyzing Problems:
+        3 hrs.
+        
+Time Preparing Design:
+        5 hrs. 
+        
+Time Solving Problems:
+        8 hrs.
+
+Time waiting for valgrind ./um sandmark.umz to complete:
+        Ongoing...
+
+        "The journey of a thousand [UM instructions] begins with one step."
+                -Lao Tzu

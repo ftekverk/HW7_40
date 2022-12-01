@@ -1,0 +1,12 @@
+cat.um
+halt.um
+hello.um
+map_unmap.um
+nand.um
+seg_load.um
+cond_move.um
+halt-verbose.um
+load_prog.um
+mult_div.um
+print-six.um
+input.um
