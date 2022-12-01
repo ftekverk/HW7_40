@@ -4,9 +4,9 @@
 CC = gcc
 
 IFLAGS  = -I/comp/40/build/include -I/usr/sup/cii40/include/cii
-CFLAGS  = -g -O1 -std=gnu99 -Wall -Wextra -Werror -pedantic $(IFLAGS)
+CFLAGS  = -g -O2 -std=gnu99 -Wall -Wextra -Werror -pedantic $(IFLAGS)
 LDFLAGS = -g -L/comp/40/build/lib -L/usr/sup/cii40/lib64
-LDLIBS  = -lcii40-O1 -lpnmrdr -lcii40-O2 -lm -lbitpack
+LDLIBS  = -lcii40-O2 -lpnmrdr -lcii40-O2 -lm -lbitpack
 
 EXECS   = test um writetests
 
