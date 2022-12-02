@@ -51,7 +51,7 @@ void parse_command(uint32_t word, uint32_t *arr)
         /* Load value case */
         if (arr[OPCODE] == 13){
                 arr[REG_A] = (word << (32 - (REG_A_LV_LSB + REG_WIDTH))) >> (32 - REG_WIDTH); 
-                arr[VAL] = (word << (32 - (VALUE_LSB + VALUE_WIDTH))) >> (32 - VALUE_WIDTH);   
+                arr[VAL]   = (word << (32 - (VALUE_LSB + VALUE_WIDTH)))  >> (32 - VALUE_WIDTH);   
         }
         /* Three register instructions */
         else {

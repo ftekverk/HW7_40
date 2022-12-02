@@ -502,3 +502,9 @@ uint32_t get_length(Segments_T segs, uint32_t segment_ID)
         assert(currSeg != NULL);
         return currSeg->length;
 }
+
+uint32_t *get_seg_zero(Segments_T segs)
+{
+       return ((Seg_info) Seq_get(segs->mapped_IDs, 0))->arr;
+}
+

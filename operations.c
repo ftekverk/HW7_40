@@ -13,8 +13,9 @@
 
 #include "operations.h"
 
-void call_operation(Segments_T segs, Registers_T registers, 
-        uint32_t *command_info, bool *keep_going, uint32_t *pc);
+void call_operation(Segments_T segs, Registers_T registers,
+                    uint32_t *command_info, bool *keep_going, 
+                    uint32_t *pc, uint32_t **commands_arr_p);
 
 void conditional_move(Segments_T segs, Registers_T registers, 
                 uint32_t *command_info);
@@ -39,7 +40,7 @@ void output(Segments_T segs, Registers_T registers,
 void input(Segments_T segs, Registers_T registers, 
                 uint32_t *command_info);
 void load_program(Segments_T segs, Registers_T registers, 
-                uint32_t *command_info, uint32_t *pc);
+                uint32_t *command_info, uint32_t *pc, uint32_t **commands_arr_p);
 void load_value(Segments_T segs, Registers_T registers, 
                 uint32_t *command_info);
 
@@ -81,19 +82,21 @@ void emulate_um(FILE *fp, char *name)
         uint32_t command = 0;
         bool keep_going = true;
         
+        uint32_t *commands_arr = get_seg_zero(segs);
+
         /* Execute um program */
         while (keep_going){
                 /* 1.) Get a command from segment 0 with offset of pc */
-                command = get_word(segs, 0, pc);
+                // command = get_word(segs, 0, pc);
+                command = commands_arr[pc];
                 /* 2.) Update pc = pc + 1 */
                 pc += 1;
                 /* 3.) Call command parse to update command_info */
                 parse_command(command, command_info);
                 /* 3.) Call the function needed based on the opcode */
-                call_operation(segs, registers, command_info, &keep_going, &pc);
+                call_operation(segs, registers, command_info, &keep_going, &pc, &commands_arr);
                 
-                /* 4.) Update if we reach the end of the segment */
-                // keep_going = keep_going && (pc < get_length(segs, 0));
+
         }
 
         /* Free data */
@@ -112,7 +115,7 @@ void emulate_um(FILE *fp, char *name)
  *      void
  */
 void call_operation(Segments_T segs, Registers_T registers, 
-        uint32_t *command_info, bool *keep_going, uint32_t *pc)
+        uint32_t *command_info, bool *keep_going, uint32_t *pc, uint32_t **commands_arr_p)
 {
         assert(segs != NULL);
         assert(registers != NULL);
@@ -162,7 +165,7 @@ void call_operation(Segments_T segs, Registers_T registers,
                 input(segs, registers, command_info);
         }
         else if (op_code == LOADP){
-                load_program(segs, registers, command_info, pc);
+                load_program(segs, registers, command_info, pc, commands_arr_p);
         }
         else if (op_code == LV){
                 load_value(segs, registers, command_info);
@@ -503,10 +506,10 @@ void input(Segments_T segs, Registers_T registers, uint32_t *command_info)
  *      Segment 0 and program counter are changed.
  *
  * Output: 
- *      void
+ *      uint32_t* to array of commands that are now in segment 0
  */
 void load_program(Segments_T segs, Registers_T registers, 
-                uint32_t *command_info, uint32_t *pc)
+                uint32_t *command_info, uint32_t *pc, uint32_t** commands_arr_p)
 {
         assert(segs != NULL);
         assert(registers != NULL);
@@ -520,6 +523,7 @@ void load_program(Segments_T segs, Registers_T registers,
 
         if (reg_b_val != zero){
                 duplicate_seg(segs, reg_b_val);
+                *commands_arr_p = get_seg_zero(segs);
         }
 
         *pc = reg_c_val;

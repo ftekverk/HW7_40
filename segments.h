@@ -28,5 +28,6 @@ uint32_t get_word(Segments_T segs, uint32_t segment_ID, uint32_t offset);
 void duplicate_seg(Segments_T segs, uint32_t segment_ID);
 
 uint32_t get_length(Segments_T segs, uint32_t segment_ID);
+uint32_t *get_seg_zero(Segments_T segs);
 
 #endif
