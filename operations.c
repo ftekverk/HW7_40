@@ -133,12 +133,6 @@ void emulate_um(FILE *fp, char *name)
 void call_operation(Segments_T segs, Registers_T registers,
                     uint32_t *command_info, bool *keep_going, uint32_t *pc, uint32_t **commands_arr_p)
 {
-        assert(segs != NULL);
-        assert(registers != NULL);
-        assert(command_info != NULL);
-        assert(keep_going != NULL);
-        assert(pc != NULL);
-
 
         uint32_t op_code = command_info[OPCODE];
         assert(op_code <= 13);
