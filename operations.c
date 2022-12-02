@@ -50,21 +50,21 @@ enum Um_opcode {
         NAND, HALT, ACTIVATE, INACTIVATE, OUT, IN, LOADP, LV
 };
 
-void (*p[14])(Segments_T segs, Registers_T registers, uint32_t *command_info);
+
 
 /* emulate_um
- * Description :
- *      Main operation for the um. Creates a segments instance, and register
+ * Description : 
+ *      Main operation for the um. Creates a segments instance, and register 
  *      instance. Parses commands from .um files and executes commands according
  *      to opcodes and other bitpacked values.
- *
- * Input Expectations:
+ *    
+ * Input Expectations: 
  *      It is a checked runtime error for fp or name to be NULL.
  *
  * Side Effects:
  *      Information can be printed to standard out.
  *
- * Output:
+ * Output: 
  *      void
  */
 void emulate_um(FILE *fp, char *name)
@@ -81,24 +81,8 @@ void emulate_um(FILE *fp, char *name)
         uint32_t pc = 0;
         uint32_t command = 0;
         bool keep_going = true;
-
-
-        /* Initialize an array of function pointers */ 
+        
         uint32_t *commands_arr = get_seg_zero(segs);
-        p[CMOV] = conditional_move;
-        p[SLOAD] = segmented_load;
-        p[SSTORE] = segmented_store;
-        p[ADD] = addition;
-        p[MUL] = multiplication;
-        p[DIV] = division;
-        p[NAND] = bitwise_nand;
-        p[HALT] = NULL;
-        p[ACTIVATE] = map_segment;
-        p[INACTIVATE] = unmap;
-        p[OUT] = output;
-        p[IN] = input;
-        p[LOADP] = NULL;
-        p[LV] = load_value;
 
         /* Execute um program */
         while (keep_going){
@@ -130,21 +114,61 @@ void emulate_um(FILE *fp, char *name)
  * Output: 
  *      void
  */
-void call_operation(Segments_T segs, Registers_T registers,
-                    uint32_t *command_info, bool *keep_going, uint32_t *pc, uint32_t **commands_arr_p)
+void call_operation(Segments_T segs, Registers_T registers, 
+        uint32_t *command_info, bool *keep_going, uint32_t *pc, uint32_t **commands_arr_p)
 {
+        assert(segs != NULL);
+        assert(registers != NULL);
+        assert(command_info != NULL);
+        assert(keep_going != NULL);
+        assert(pc != NULL);
+
 
         uint32_t op_code = command_info[OPCODE];
-        assert(op_code <= 13);
 
-        if((*p[op_code]) != NULL){
-                (*p[op_code])(segs, registers, command_info);
+        assert(op_code <= 13);
+        
+        if (op_code == CMOV){
+                conditional_move(segs, registers, command_info);
+        }
+        else if (op_code == SLOAD){
+                segmented_load(segs, registers, command_info);
+        }
+        else if (op_code == SSTORE){
+                segmented_store(segs, registers, command_info);
+        }
+        else if (op_code == ADD){
+                addition(segs, registers, command_info); 
+        }
+        else if (op_code == MUL){
+                multiplication(segs, registers, command_info);
+        }
+        else if (op_code == DIV){
+                division(segs, registers, command_info);
+        }
+        else if (op_code == NAND){
+                bitwise_nand(segs, registers, command_info);
         }
         else if (op_code == HALT){
                 *keep_going = false;
         }
+        else if (op_code == ACTIVATE){
+                map_segment(segs, registers, command_info);
+        }
+        else if (op_code == INACTIVATE){
+                unmap(segs, registers, command_info);
+        }
+        else if (op_code == OUT){
+                output(segs, registers, command_info);
+        }
+        else if (op_code == IN){
+                input(segs, registers, command_info);
+        }
         else if (op_code == LOADP){
                 load_program(segs, registers, command_info, pc, commands_arr_p);
+        }
+        else if (op_code == LV){
+                load_value(segs, registers, command_info);
         }
 }
 
