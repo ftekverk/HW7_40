@@ -45,22 +45,19 @@ void parse_command(uint32_t word, uint32_t *arr)
 {
         assert(arr != NULL);
 
-        arr[OPCODE] = Bitpack_getu(word, OPCODE_WIDTH, OPCODE_LSB);
+        arr[OPCODE] = (word << (32 - (OPCODE_LSB + OPCODE_WIDTH))) >> (32 - OPCODE_WIDTH);
         assert(arr[OPCODE] <= 13);
 
         /* Load value case */
         if (arr[OPCODE] == 13){
-                arr[REG_A] = Bitpack_getu(word, REG_WIDTH,   REG_A_LV_LSB);
-                arr[VAL]   = Bitpack_getu(word, VALUE_WIDTH, VALUE_LSB);
-                arr[REG_B] = -1;
-                arr[REG_C] = -1;
+                arr[REG_A] = (word << (32 - (REG_A_LV_LSB + REG_WIDTH))) >> (32 - REG_WIDTH); 
+                arr[VAL] = (word << (32 - (VALUE_LSB + VALUE_WIDTH))) >> (32 - VALUE_WIDTH);   
         }
         /* Three register instructions */
         else {
-                arr[REG_A] = Bitpack_getu(word, REG_WIDTH, REG_A_LSB);
-                arr[REG_B] = Bitpack_getu(word, REG_WIDTH, REG_B_LSB);
-                arr[REG_C] = Bitpack_getu(word, REG_WIDTH, REG_C_LSB);
-                arr[VAL]   = -1;
+                arr[REG_A] = (word << (32 - (REG_A_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
+                arr[REG_B] = (word << (32 - (REG_B_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
+                arr[REG_C] = (word << (32 - (REG_C_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
         }
 
 
