@@ -15,7 +15,7 @@ all: $(EXECS)
 test: testing.o registers.o segments.o bitpack.o commandParse.o operations.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
-um: um.o registers.o segments.o bitpack.o commandParse.o operations.o
+um: um.o segments.o bitpack.o commandParse.o operations.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 	
 writetests: umlabwrite.o umlab.o

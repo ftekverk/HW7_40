@@ -21,7 +21,7 @@
 #include <stdbool.h>
 
 #include "segments.h"
-#include "registers.h"
+// #include "registers.h"
 #include "commandParse.h"
 
 
