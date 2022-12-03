@@ -13,15 +13,39 @@
 
 #include "operations.h"
 
+#define OPCODE_LSB 28
+#define OPCODE_WIDTH 4
+
+#define REG_WIDTH 3
+#define REG_A_LSB 6
+#define REG_B_LSB 3
+#define REG_C_LSB 0
+
+/* IF OP CODE == 13 */
+#define REG_A_LV_LSB 25
+#define VALUE_LSB 0
+#define VALUE_WIDTH 25
+
+
+
 void call_operation(Segments_T segs, uint32_t *registers,
                     uint32_t *command_info, bool *keep_going, 
                     uint32_t *pc, uint32_t **commands_arr_p);
+
+
+
+void parse_command(uint32_t word, uint32_t *arr);
+
 
 
 /* The various 4-bit opcode values at the start of 32-bit instructions */
 enum Um_opcode {
         CMOV = 0, SLOAD, SSTORE, ADD, MUL, DIV,
         NAND, HALT, ACTIVATE, INACTIVATE, OUT, IN, LOADP, LV
+};
+
+enum Word_val {
+        OPCODE = 0, REG_A, REG_B, REG_C, VAL
 };
 
 
@@ -65,7 +89,27 @@ void emulate_um(FILE *fp, char *name)
                 /* 2.) Update pc = pc + 1 */
                 pc += 1;
                 /* 3.) Call command parse to update command_info */
-                parse_command(command, command_info);
+/* -------------------- PARSE COMMAND ------------------------------- */
+
+                command_info[OPCODE] = (command << (32 - (OPCODE_LSB + OPCODE_WIDTH))) >> (32 - OPCODE_WIDTH);
+                assert(command_info[OPCODE] <= 13);
+
+                /* Load value case */
+                if (command_info[OPCODE] == 13){
+                        command_info[REG_A] = (command << (32 - (REG_A_LV_LSB + REG_WIDTH))) >> (32 - REG_WIDTH); 
+                        command_info[VAL]   = (command << (32 - (VALUE_LSB + VALUE_WIDTH)))  >> (32 - VALUE_WIDTH);   
+                }
+                /* Three register instructions */
+                else {
+                        command_info[REG_A] = (command << (32 - (REG_A_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
+                        command_info[REG_B] = (command << (32 - (REG_B_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
+                        command_info[REG_C] = (command << (32 - (REG_C_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
+                }
+
+
+/* -------------------- PARSE COMMAND ------------------------------- */
+
+                // parse_command(command, command_info);
                 /* 4.) Call the function needed based on the opcode */
                 call_operation(segs, registers, command_info, &keep_going, &pc, &commands_arr);
         }

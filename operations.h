@@ -22,7 +22,7 @@
 
 #include "segments.h"
 // #include "registers.h"
-#include "commandParse.h"
+// #include "commandParse.h"
 
 
 void emulate_um(FILE *fp, char *name);

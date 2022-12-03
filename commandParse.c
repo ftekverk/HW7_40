@@ -43,8 +43,6 @@
  */
 void parse_command(uint32_t word, uint32_t *arr)
 {
-        assert(arr != NULL);
-
         arr[OPCODE] = (word << (32 - (OPCODE_LSB + OPCODE_WIDTH))) >> (32 - OPCODE_WIDTH);
         assert(arr[OPCODE] <= 13);
 
