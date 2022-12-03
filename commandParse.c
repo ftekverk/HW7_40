@@ -59,7 +59,4 @@ void parse_command(uint32_t word, uint32_t *arr)
                 arr[REG_B] = (word << (32 - (REG_B_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
                 arr[REG_C] = (word << (32 - (REG_C_LSB + REG_WIDTH))) >> (32 - REG_WIDTH);
         }
-
-
-        return;
 }

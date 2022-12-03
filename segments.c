@@ -14,6 +14,7 @@
 #include "segments.h"
 
 #define SEQ_HINT 10000
+#define EXPAND_CONST 2
 
 typedef struct Seg_info {
         uint32_t *arr;
@@ -25,7 +26,11 @@ typedef struct Seg_info {
    in use, and which IDs have been recycled */
 struct Segments_T {
     Seq_T unmapped_IDs; /* Stores pointers to ids */
-    Seq_T mapped_IDs;   /* Stores structs {*32-bit arr, length} */
+//     Seq_T mapped_IDs;   /* Stores structs {*32-bit arr, length} */
+
+        Seg_info *mapped_IDs;
+        unsigned mapped_length;
+        unsigned num_segments;
 };
 
 /*Internal helper functions */
@@ -42,6 +47,8 @@ void free_seg_info(Seg_info segment);
 /* Populate zero segment */
 void read_file_data(FILE *fp, char *name, Segments_T segs);
 uint32_t new_word(FILE *input);
+
+void expand(Segments_T segs);
 
 
 
@@ -63,7 +70,20 @@ Segments_T segments_new(FILE *fp, char *name)
         assert(segments != NULL);
 
         segments->unmapped_IDs = Seq_new(SEQ_HINT);
-        segments->mapped_IDs   = Seq_new(SEQ_HINT);
+
+
+        // segments->mapped_IDs   = Seq_new(SEQ_HINT);
+        
+        segments->mapped_IDs = malloc(sizeof(struct Seg_info) * SEQ_HINT);
+        assert(segments->mapped_IDs != NULL);
+        
+        segments->mapped_length = SEQ_HINT;
+        segments->num_segments = 0;
+
+        for (unsigned i = 0; i < SEQ_HINT; i++)
+        {
+                (segments->mapped_IDs)[i] = NULL;
+        }
 
         read_file_data(fp, name, segments);
 
@@ -175,21 +195,33 @@ void segments_free(Segments_T *segs)
  * Output: 
  *      N/A
  */
+ /* Frees structs {array pointer, length} */
 void free_mapped_segs(Segments_T segs)
 {
         assert(segs != NULL);
         
-        /* Frees structs {array pointer, length} */
-        Seq_T mapped = segs->mapped_IDs;
-        int mapped_length = Seq_length(mapped);
-        for(int i = 0; i < mapped_length; i++){
-                Seg_info segment = (Seg_info) Seq_get(mapped, i);
+        Seg_info *mapped = segs->mapped_IDs;
+
+        /* Iterate over the length of the array */
+        unsigned length = segs->num_segments;
+        for(unsigned i = 0; i < length; i++){
+                Seg_info segment = mapped[i];
                 if (segment != NULL){
                         free_seg_info(segment);
                 }
+                // free_seg_info(mapped[i]);
         }
+
+        // int mapped_length = Seq_length(mapped);
+        // for(int i = 0; i < mapped_length; i++){
+        //         Seg_info segment = (Seg_info) Seq_get(mapped, i);
+        //         if (segment != NULL){
+        //                 free_seg_info(segment);
+        //         }
+        // }
         
-        Seq_free(&mapped);
+        // Seq_free(&mapped);
+        free(mapped);
 }
 
 /* free_unmapped_segs
@@ -256,6 +288,12 @@ uint32_t map_new(Segments_T segs, int numWords)
         assert(segs != NULL);
         assert(numWords > 0);
 
+        /* Implement as a dynamic array */
+        segs->num_segments += 1;
+        if (segs->num_segments >= segs->mapped_length){
+                expand(segs);
+        }
+
         /* 1.) Make a new segment */
         Seg_info newSeg = make_new_segment(numWords);
 
@@ -267,13 +305,16 @@ uint32_t map_new(Segments_T segs, int numWords)
         /* Reuse available unmapped IDs*/
         if (Seq_length(segs->unmapped_IDs) != 0){
                 uint32_t id = get_next_id(segs);
-                Seq_put(segs->mapped_IDs, id, newSeg);
+                // Seq_put(segs->mapped_IDs, id, newSeg);
+                (segs->mapped_IDs)[id] = newSeg;
                 return id;
         }
         /* Otherwise, use the next ID sequentially */
         else{
-                Seq_addhi(segs->mapped_IDs, newSeg);
-                return Seq_length(segs->mapped_IDs) - 1;
+                // Seq_addhi(segs->mapped_IDs, newSeg);
+                segs->mapped_IDs[segs->num_segments - 1] = newSeg;
+                    // return Seq_length(segs->mapped_IDs) - 1;
+                return segs->num_segments - 1;
         }
         
 }
@@ -352,7 +393,9 @@ void unmap_segment(Segments_T segs, int id)
         assert(id >= 0);
         
         /* 1.) Update array which stores segment addresses */
-        Seg_info segment = (Seg_info) Seq_put(segs->mapped_IDs, id, NULL);
+        // Seg_info segment = (Seg_info) Seq_put(segs->mapped_IDs, id, NULL);
+        Seg_info segment = segs->mapped_IDs[id];
+        segs->mapped_IDs[id] = NULL;
         free_seg_info(segment);
         
         /* 2.) Add id to recycled ids */
@@ -403,8 +446,9 @@ uint32_t get_word(Segments_T segs, uint32_t segment_ID, uint32_t offset)
         assert(segs != NULL);
 
         /* 1.) Get Mapped Segment Sequence and array it stores */
-        Seq_T mapped = segs->mapped_IDs;
-        Seg_info currSeg = Seq_get(mapped, segment_ID);
+        Seg_info *mapped = segs->mapped_IDs;
+        // Seg_info currSeg = Seq_get(mapped, segment_ID);
+        Seg_info currSeg = mapped[segment_ID];
         assert(currSeg != NULL);
         uint32_t *currSegArr = currSeg->arr;
         uint32_t length      = currSeg->length;
@@ -430,8 +474,10 @@ void store_word(Segments_T segs, uint32_t segment_ID, uint32_t offset,
         assert(segs != NULL);
         
         /* 1.) Get Mapped Segment Sequence and array it stores */
-        Seq_T mapped = segs->mapped_IDs;
-        Seg_info currSeg = Seq_get(mapped, segment_ID);
+        Seg_info * mapped = segs->mapped_IDs;
+        // Seg_info currSeg = Seq_get(mapped, segment_ID);
+        Seg_info currSeg = mapped[segment_ID];
+
         assert(currSeg != NULL);
         uint32_t *currSegArr = currSeg->arr;
         uint32_t length      = currSeg->length;
@@ -462,8 +508,10 @@ void duplicate_seg(Segments_T segs, uint32_t segment_ID)
         assert(segs != NULL);
 
         /* 1.) Get Segment to Copy */
-        Seq_T mapped = segs->mapped_IDs;
-        Seg_info currSeg = (Seg_info) Seq_get(mapped, segment_ID);
+        Seg_info * mapped = segs->mapped_IDs;
+        // Seg_info currSeg = (Seg_info) Seq_get(mapped, segment_ID);
+        Seg_info currSeg = mapped[segment_ID];
+
         assert(currSeg != NULL);
         
         /* 2.) Create a new segment */
@@ -475,8 +523,11 @@ void duplicate_seg(Segments_T segs, uint32_t segment_ID)
         }
         
         /* Not casting as a seg info */
-        Seg_info zeroSeg = (Seg_info) Seq_put(mapped, 0, copySeg);
+        // Seg_info zeroSeg = (Seg_info) Seq_put(mapped, 0, copySeg);
+
+        Seg_info zeroSeg = mapped[0];
         free_seg_info(zeroSeg);    
+        mapped[0] = copySeg;
 
         return;
 }
@@ -497,14 +548,43 @@ uint32_t get_length(Segments_T segs, uint32_t segment_ID)
 {
         assert(segs != NULL);
 
-        Seq_T mapped = segs->mapped_IDs;
-        Seg_info currSeg = Seq_get(mapped, segment_ID);
+        Seg_info * mapped = segs->mapped_IDs;
+
+        // Seg_info currSeg = Seq_get(mapped, segment_ID);
+        Seg_info currSeg = mapped[segment_ID];
+
         assert(currSeg != NULL);
         return currSeg->length;
 }
 
 uint32_t *get_seg_zero(Segments_T segs)
 {
-       return ((Seg_info) Seq_get(segs->mapped_IDs, 0))->arr;
+//        return ((Seg_info) Seq_get(segs->mapped_IDs, 0))->arr;
+        return ((segs->mapped_IDs)[0])->arr;
 }
 
+void expand(Segments_T segs)
+{
+        /* Allocate new array */
+        Seg_info *new_arr = malloc(sizeof(struct Seg_info) * EXPAND_CONST * segs->mapped_length);
+        assert(new_arr != NULL);
+        
+        /* Copy Data Over */
+        for (unsigned i = 0; i < EXPAND_CONST * segs->mapped_length; i++){
+                new_arr[i] = NULL;
+        }
+
+        for (unsigned i = 0 ; i < segs->num_segments; i++){
+                new_arr[i] = (segs->mapped_IDs)[i];
+        }
+        
+        /* Free old array */
+        // free_mapped_segs(segs);
+        free(segs->mapped_IDs);
+        
+
+        /* Update pointer and values */
+        segs->mapped_length *= 2;
+        segs->mapped_IDs = new_arr;
+
+}

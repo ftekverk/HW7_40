@@ -92,11 +92,111 @@ void call_operation(Segments_T segs, uint32_t *registers,
 
         assert(op_code <= 13);
         
+        
+
+# if 0
+        uint32_t id, offset, reg_a_val, reg_b_val, reg_c_val, val_A,
+                val_B, val_C, seg_num, zero, val, full_word;
+
+        int char_val;
+
+        switch (op_code)
+        {
+        case CMOV :
+                if (registers[command_info[REG_C]] != 0)
+                {
+                        reg_b_val = registers[command_info[REG_B]];
+                        registers[command_info[REG_A]] = reg_b_val;
+                }
+                break;
+        case SLOAD :
+                id = registers[command_info[REG_B]];
+                offset = registers[command_info[REG_C]];
+                reg_a_val = get_word(segs, id, offset);
+                registers[command_info[REG_A]] = reg_a_val;
+                break;
+        case SSTORE :
+                id = registers[command_info[REG_A]];
+                offset = registers[command_info[REG_B]];
+                reg_c_val = registers[command_info[REG_C]];
+                store_word(segs, id, offset, reg_c_val);
+                break;
+        case ADD :
+                val_B = registers[command_info[REG_B]];
+                val_C = registers[command_info[REG_C]];
+                registers[command_info[REG_A]] = val_B + val_C;
+                break;
+        case MUL :
+                val_B = registers[command_info[REG_B]];
+                val_C = registers[command_info[REG_C]];
+                registers[command_info[REG_A]] = val_B * val_C;
+                break;
+        case DIV :
+                val_B = registers[command_info[REG_B]];
+                val_C = registers[command_info[REG_C]];
+                assert(val_C != 0);
+                registers[command_info[REG_A]] = val_B / val_C;
+                break;
+        case NAND :
+                val_B = registers[command_info[REG_B]];
+                val_C = registers[command_info[REG_C]];
+                val_A = ~(val_B & val_C);
+                registers[command_info[REG_A]] = val_A;
+                break;
+        case HALT :
+                *keep_going = false;
+                break;
+        case ACTIVATE :
+                val_C = registers[command_info[REG_C]];
+                seg_num = map_new(segs, val_C);
+                registers[command_info[REG_B]] = seg_num;
+                break;
+        case INACTIVATE :
+                val_C = registers[command_info[REG_C]];
+                unmap_segment(segs, val_C);
+                break;
+        case OUT :
+                val = registers[command_info[REG_C]];
+                assert(val <= 255);
+                char character = val;
+                fprintf(stdout, "%c", character);
+                break;
+        case IN :
+                char_val = fgetc(stdin);
+                if (char_val == EOF)
+                {
+                        full_word = 0;
+                        full_word = ~full_word;
+                        registers[command_info[REG_C]] = full_word;
+                }
+                else
+                {
+                        assert(char_val >= 0 && char_val <= 255);
+                        registers[command_info[REG_C]] = char_val;
+                }
+                        break;
+        case LOADP :
+                reg_b_val = registers[command_info[REG_B]];
+                reg_c_val = registers[command_info[REG_C]];
+                zero = 0;
+                if (reg_b_val != zero)
+                {
+                        duplicate_seg(segs, reg_b_val);
+                        *commands_arr_p = get_seg_zero(segs);
+                }
+                *pc = reg_c_val;
+                break;
+        case LV :
+                registers[command_info[REG_A]] = command_info[VAL];
+                break;
+        }
+#endif
+
+
         if (op_code == CMOV){
                 if (registers[command_info[REG_C]] != 0)
                 {
                         uint32_t reg_b_val = registers[command_info[REG_B]];
-
                         registers[command_info[REG_A]] = reg_b_val;
                 }
         }
@@ -104,7 +204,6 @@ void call_operation(Segments_T segs, uint32_t *registers,
                 uint32_t id = registers[command_info[REG_B]];
                 uint32_t offset = registers[command_info[REG_C]];
                 uint32_t reg_a_val = get_word(segs, id, offset);
-
                 registers[command_info[REG_A]] = reg_a_val;
         }
         else if (op_code == SSTORE){
@@ -116,27 +215,23 @@ void call_operation(Segments_T segs, uint32_t *registers,
         else if (op_code == ADD){
                 uint32_t val_B = registers[command_info[REG_B]];
                 uint32_t val_C = registers[command_info[REG_C]];
-
                 registers[command_info[REG_A]] = val_B + val_C;
         }
         else if (op_code == MUL){
                 uint32_t val_B = registers[command_info[REG_B]];
                 uint32_t val_C = registers[command_info[REG_C]];
-
                 registers[command_info[REG_A]] = val_B * val_C;
         }
         else if (op_code == DIV){
                 uint32_t val_B = registers[command_info[REG_B]];
                 uint32_t val_C = registers[command_info[REG_C]];
                 assert(val_C != 0);
-
                 registers[command_info[REG_A]] = val_B / val_C;
         }
         else if (op_code == NAND){
                 uint32_t val_B = registers[command_info[REG_B]];
                 uint32_t val_C = registers[command_info[REG_C]];
                 uint32_t val_A = ~(val_B & val_C);
-
                 registers[command_info[REG_A]] = val_A;
         }
         else if (op_code == HALT){
@@ -159,7 +254,6 @@ void call_operation(Segments_T segs, uint32_t *registers,
         }
         else if (op_code == IN){
                 int char_val = fgetc(stdin);
-
                 if (char_val == EOF){
                         uint32_t full_word = 0;
                         full_word = ~full_word;
@@ -173,14 +267,11 @@ void call_operation(Segments_T segs, uint32_t *registers,
         else if (op_code == LOADP){
                 uint32_t reg_b_val = registers[command_info[REG_B]];
                 uint32_t reg_c_val = registers[command_info[REG_C]];
-        
                 uint32_t zero = 0;
-
                 if (reg_b_val != zero){
                         duplicate_seg(segs, reg_b_val);
                         *commands_arr_p = get_seg_zero(segs);
                 }
-
                 *pc = reg_c_val;
         }
         else if (op_code == LV){
