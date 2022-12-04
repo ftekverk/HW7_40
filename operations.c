@@ -28,9 +28,9 @@
 
 
 
-void call_operation(Segments_T segs, uint32_t *registers,
-                    uint32_t *command_info, bool *keep_going, 
-                    uint32_t *pc, uint32_t **commands_arr_p);
+// void call_operation(Segments_T segs, uint32_t *registers,
+//                     uint32_t *command_info, bool *keep_going, 
+//                     uint32_t *pc, uint32_t **commands_arr_p);
 
 
 
@@ -75,7 +75,6 @@ void emulate_um(FILE *fp, char *name)
         uint32_t registers[8] = {0,0,0,0,0,0,0,0};
         uint32_t command_info[5] = {0,0,0,0,0};
 
-
         uint32_t pc = 0;
         uint32_t command = 0;
         bool keep_going = true;
@@ -89,7 +88,7 @@ void emulate_um(FILE *fp, char *name)
                 /* 2.) Update pc = pc + 1 */
                 pc += 1;
                 /* 3.) Call command parse to update command_info */
-/* -------------------- PARSE COMMAND ------------------------------- */
+        /* -------------------- PARSE COMMAND ------------------------------- */
 
                 command_info[OPCODE] = (command << (32 - (OPCODE_LSB + OPCODE_WIDTH))) >> (32 - OPCODE_WIDTH);
                 assert(command_info[OPCODE] <= 13);
@@ -107,127 +106,114 @@ void emulate_um(FILE *fp, char *name)
                 }
 
 
-/* -------------------- PARSE COMMAND ------------------------------- */
+        /* -------------------- PARSE COMMAND ------------------------------- */
 
-                // parse_command(command, command_info);
-                /* 4.) Call the function needed based on the opcode */
-                call_operation(segs, registers, command_info, &keep_going, &pc, &commands_arr);
+        /* 4.) Call the function needed based on the opcode */
+        /* -------------------- CALL OPERATION ------------------------------- */
+
+                uint32_t op_code = command_info[OPCODE];
+                assert(op_code <= 13);
+
+                uint32_t id, offset, reg_a_val, reg_b_val, reg_c_val, val_A,
+                        val_B, val_C, seg_num, zero, val, full_word;
+
+                int char_val;
+
+                switch (op_code)
+                {
+                case CMOV :
+                        if (registers[command_info[REG_C]] != 0)
+                        {
+                                reg_b_val = registers[command_info[REG_B]];
+                                registers[command_info[REG_A]] = reg_b_val;
+                        }
+                        break;
+                case SLOAD :
+                        id = registers[command_info[REG_B]];
+                        offset = registers[command_info[REG_C]];
+                        reg_a_val = get_word(segs, id, offset);
+                        registers[command_info[REG_A]] = reg_a_val;
+                        break;
+                case SSTORE :
+                        id = registers[command_info[REG_A]];
+                        offset = registers[command_info[REG_B]];
+                        reg_c_val = registers[command_info[REG_C]];
+                        store_word(segs, id, offset, reg_c_val);
+                        break;
+                case ADD :
+                        val_B = registers[command_info[REG_B]];
+                        val_C = registers[command_info[REG_C]];
+                        registers[command_info[REG_A]] = val_B + val_C;
+                        break;
+                case MUL :
+                        val_B = registers[command_info[REG_B]];
+                        val_C = registers[command_info[REG_C]];
+                        registers[command_info[REG_A]] = val_B * val_C;
+                        break;
+                case DIV :
+                        val_B = registers[command_info[REG_B]];
+                        val_C = registers[command_info[REG_C]];
+                        assert(val_C != 0);
+                        registers[command_info[REG_A]] = val_B / val_C;
+                        break;
+                case NAND :
+                        val_B = registers[command_info[REG_B]];
+                        val_C = registers[command_info[REG_C]];
+                        val_A = ~(val_B & val_C);
+                        registers[command_info[REG_A]] = val_A;
+                        break;
+                case HALT :
+                        keep_going = false;
+                        break;
+                case ACTIVATE :
+                        val_C = registers[command_info[REG_C]];
+                        seg_num = map_new(segs, val_C);
+                        registers[command_info[REG_B]] = seg_num;
+                        break;
+                case INACTIVATE :
+                        val_C = registers[command_info[REG_C]];
+                        unmap_segment(segs, val_C);
+                        break;
+                case OUT :
+                        val = registers[command_info[REG_C]];
+                        assert(val <= 255);
+                        char character = val;
+                        fprintf(stdout, "%c", character);
+                        break;
+                case IN :
+                        char_val = fgetc(stdin);
+                        if (char_val == EOF)
+                        {
+                                full_word = 0;
+                                full_word = ~full_word;
+                                registers[command_info[REG_C]] = full_word;
+                        }
+                        else
+                        {
+                                assert(char_val >= 0 && char_val <= 255);
+                                registers[command_info[REG_C]] = char_val;
+                        }
+                                break;
+                case LOADP :
+                        reg_b_val = registers[command_info[REG_B]];
+                        reg_c_val = registers[command_info[REG_C]];
+                        zero = 0;
+                        if (reg_b_val != zero)
+                        {
+                                duplicate_seg(segs, reg_b_val);
+                                commands_arr = get_seg_zero(segs);
+                        }
+                        pc = reg_c_val;
+                        break;
+                case LV :
+                        registers[command_info[REG_A]] = command_info[VAL];
+                        break;
+                }
+
+
+/* -------------------- CALL OPERATION  ------------------------------- */
         }
 
         /* Free data */
         segments_free(&segs);
-}
-
-/* call_operation
- * Description : 
- *      Calls the corresponding function based on provided command info opcode.
- *    
- * Input Expectations: 
- *      It is a checked runtime error for any of the arguments to be NULL.
- *
- * Output: 
- *      void
- */
-void call_operation(Segments_T segs, uint32_t *registers, 
-        uint32_t *command_info, bool *keep_going, uint32_t *pc, uint32_t **commands_arr_p)
-{
-
-        uint32_t op_code = command_info[OPCODE];
-        assert(op_code <= 13);
-
-        uint32_t id, offset, reg_a_val, reg_b_val, reg_c_val, val_A,
-                val_B, val_C, seg_num, zero, val, full_word;
-
-        int char_val;
-
-        switch (op_code)
-        {
-        case CMOV :
-                if (registers[command_info[REG_C]] != 0)
-                {
-                        reg_b_val = registers[command_info[REG_B]];
-                        registers[command_info[REG_A]] = reg_b_val;
-                }
-                break;
-        case SLOAD :
-                id = registers[command_info[REG_B]];
-                offset = registers[command_info[REG_C]];
-                reg_a_val = get_word(segs, id, offset);
-                registers[command_info[REG_A]] = reg_a_val;
-                break;
-        case SSTORE :
-                id = registers[command_info[REG_A]];
-                offset = registers[command_info[REG_B]];
-                reg_c_val = registers[command_info[REG_C]];
-                store_word(segs, id, offset, reg_c_val);
-                break;
-        case ADD :
-                val_B = registers[command_info[REG_B]];
-                val_C = registers[command_info[REG_C]];
-                registers[command_info[REG_A]] = val_B + val_C;
-                break;
-        case MUL :
-                val_B = registers[command_info[REG_B]];
-                val_C = registers[command_info[REG_C]];
-                registers[command_info[REG_A]] = val_B * val_C;
-                break;
-        case DIV :
-                val_B = registers[command_info[REG_B]];
-                val_C = registers[command_info[REG_C]];
-                assert(val_C != 0);
-                registers[command_info[REG_A]] = val_B / val_C;
-                break;
-        case NAND :
-                val_B = registers[command_info[REG_B]];
-                val_C = registers[command_info[REG_C]];
-                val_A = ~(val_B & val_C);
-                registers[command_info[REG_A]] = val_A;
-                break;
-        case HALT :
-                *keep_going = false;
-                break;
-        case ACTIVATE :
-                val_C = registers[command_info[REG_C]];
-                seg_num = map_new(segs, val_C);
-                registers[command_info[REG_B]] = seg_num;
-                break;
-        case INACTIVATE :
-                val_C = registers[command_info[REG_C]];
-                unmap_segment(segs, val_C);
-                break;
-        case OUT :
-                val = registers[command_info[REG_C]];
-                assert(val <= 255);
-                char character = val;
-                fprintf(stdout, "%c", character);
-                break;
-        case IN :
-                char_val = fgetc(stdin);
-                if (char_val == EOF)
-                {
-                        full_word = 0;
-                        full_word = ~full_word;
-                        registers[command_info[REG_C]] = full_word;
-                }
-                else
-                {
-                        assert(char_val >= 0 && char_val <= 255);
-                        registers[command_info[REG_C]] = char_val;
-                }
-                        break;
-        case LOADP :
-                reg_b_val = registers[command_info[REG_B]];
-                reg_c_val = registers[command_info[REG_C]];
-                zero = 0;
-                if (reg_b_val != zero)
-                {
-                        duplicate_seg(segs, reg_b_val);
-                        *commands_arr_p = get_seg_zero(segs);
-                }
-                *pc = reg_c_val;
-                break;
-        case LV :
-                registers[command_info[REG_A]] = command_info[VAL];
-                break;
-        }
 }
