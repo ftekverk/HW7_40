@@ -24,6 +24,8 @@
 // #include "registers.h"
 // #include "commandParse.h"
 
+#include <bitpack.h>
+#include <assert.h>
 
 void emulate_um(FILE *fp, char *name);
 

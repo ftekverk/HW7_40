@@ -67,7 +67,7 @@ void expand_unmapped(Segments_T segs);
 * Output:
 *      returns a pointer to the new struct
 */
-Segments_T segments_new(FILE *fp, char *name)
+static inline Segments_T segments_new(FILE *fp, char *name)
 {
         Segments_T segments = malloc(sizeof(struct Segments_T));
         assert(segments != NULL);
@@ -109,7 +109,7 @@ Segments_T segments_new(FILE *fp, char *name)
  * Output: 
  *      N/A
  */
-void read_file_data(FILE *fp, char *name, Segments_T segs)
+static inline void read_file_data(FILE *fp, char *name, Segments_T segs)
 {
         assert(segs != NULL);
         struct stat sb;
@@ -143,7 +143,7 @@ void read_file_data(FILE *fp, char *name, Segments_T segs)
  *      Returns an unsigned 32 bit integer that stores the next 4 bytes from
  *      the file in big endian order
  */
-uint32_t new_word(FILE *input)
+static inline uint32_t new_word(FILE *input)
 {
         assert(input != NULL);
         uint32_t word = 0;
@@ -170,7 +170,7 @@ uint32_t new_word(FILE *input)
  * Output: 
  *     N/A
  */
-void segments_free(Segments_T *segs)
+static inline void segments_free(Segments_T *segs)
 {
         assert(segs != NULL);
         
@@ -197,7 +197,7 @@ void segments_free(Segments_T *segs)
  *      N/A
  */
  /* Frees structs {array pointer, length} */
-void free_mapped_segs(Segments_T segs)
+static inline void free_mapped_segs(Segments_T segs)
 {
         assert(segs != NULL);
         
@@ -226,7 +226,7 @@ void free_mapped_segs(Segments_T segs)
  * Output: 
  *      N/A
  */
-void free_unmapped_segs(Segments_T segs)
+static inline void free_unmapped_segs(Segments_T segs)
 {
         assert(segs != NULL);
 
@@ -248,7 +248,7 @@ void free_unmapped_segs(Segments_T segs)
  * Output: 
  *      N/A
  */
-void free_seg_info(Seg_info segment)
+static inline void free_seg_info(Seg_info segment)
 {
         assert(segment != NULL);
         free(segment->arr);
@@ -270,7 +270,7 @@ void free_seg_info(Seg_info segment)
  * Output: 
  *      Returns the ID of the newly mapped segment
  */
-uint32_t map_new(Segments_T segs, int numWords)
+static inline uint32_t map_new(Segments_T segs, int numWords)
 {
         assert(segs != NULL);
         assert(numWords > 0);
@@ -439,6 +439,8 @@ uint32_t get_word(Segments_T segs, uint32_t segment_ID, uint32_t offset)
         assert(offset < length);
         
         return currSegArr[offset];
+
+        
 }
 
 /* store_word

@@ -8,7 +8,7 @@ CFLAGS  = -g -O2 -std=gnu99 -Wall -Wextra -Werror -pedantic $(IFLAGS)
 LDFLAGS = -g -L/comp/40/build/lib -L/usr/sup/cii40/lib64
 LDLIBS  = -lcii40-O2 -lpnmrdr -lcii40-O2 -lm -lbitpack
 
-EXECS   = um
+EXECS   = um test
 
 all: $(EXECS)
 
@@ -17,7 +17,9 @@ all: $(EXECS)
 
 um: um.o segments.o bitpack.o operations.o
 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
-	
+
+test: um.o bitpack.o operations.o
+	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 # writetests: umlabwrite.o umlab.o
 # 	$(CC) $(LDFLAGS) $^ -o $@ $(LDLIBS)
 
